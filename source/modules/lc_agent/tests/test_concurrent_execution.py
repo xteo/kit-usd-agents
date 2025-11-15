@@ -236,10 +236,9 @@ async def test_diamond_graph_parallel_execution(reset_execution_log):
 
     print(f"{'='*60}\n")
 
-    # THIS TEST WILL FAIL WITH CURRENT IMPLEMENTATION (sequential)
-    # Uncomment the following assertion once parallel execution is implemented:
-    # assert parallel, "B and C should execute in parallel but executed sequentially"
-    # assert total_time < 1.5, f"Expected ~1.2s with parallel execution, got {total_time:.3f}s"
+    # Validate parallel execution - this should pass with the new implementation
+    assert parallel, "B and C should execute in parallel but executed sequentially"
+    assert total_time < 1.5, f"Expected ~1.2s with parallel execution, got {total_time:.3f}s"
 
 
 @pytest.mark.asyncio
@@ -288,15 +287,18 @@ async def test_wide_graph_parallel_execution(reset_execution_log):
         print(f"\n✓ All middle nodes executed IN PARALLEL")
         print(f"  Expected time: ~0.7s")
         print(f"  Actual time: {total_time:.3f}s")
-        assert total_time < 1.0
     else:
         print(f"\n✗ Middle nodes executed SEQUENTIALLY")
         print(f"  Expected time with parallel: ~0.7s")
         print(f"  Expected time with sequential: ~2.1s")
         print(f"  Actual time: {total_time:.3f}s")
-        assert total_time > 1.8
 
     print(f"{'='*60}\n")
+
+    # Validate parallel execution
+    assert parallel_bc and parallel_cd and parallel_de, \
+        "Middle nodes should execute in parallel but some executed sequentially"
+    assert total_time < 1.0, f"Expected ~0.7s with parallel execution, got {total_time:.3f}s"
 
 
 @pytest.mark.asyncio
@@ -387,7 +389,6 @@ async def test_complex_multi_level_graph(reset_execution_log):
         print(f"\n✓ Multi-level parallel execution detected")
         print(f"  Expected time: ~0.7s")
         print(f"  Actual time: {total_time:.3f}s")
-        assert total_time < 0.9
     else:
         print(f"\n✗ Sequential execution detected")
         print(f"  Expected time with parallel: ~0.7s")
@@ -395,6 +396,11 @@ async def test_complex_multi_level_graph(reset_execution_log):
         print(f"  Actual time: {total_time:.3f}s")
 
     print(f"{'='*60}\n")
+
+    # Validate multi-level parallel execution
+    assert level1_parallel, "Level 1 nodes (B, C) should execute in parallel"
+    assert level2_parallel, "Level 2 nodes (D, E, F) should execute in parallel"
+    assert total_time < 0.9, f"Expected ~0.7s with parallel execution, got {total_time:.3f}s"
 
 
 @pytest.mark.asyncio
