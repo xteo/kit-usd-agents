@@ -5,9 +5,11 @@
 # Fixed version. Later versions may not be compatible with Kit because of pydantic.
 langchain-core
 
+aiohttp
 aioredis==2.0.1
 langchain
 langchainhub
 libcst==1.5.0
+requests
 tiktoken
 toml==0.10.2
