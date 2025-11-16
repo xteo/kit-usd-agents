@@ -49,8 +49,8 @@ For more information, see claude.md in the repository root.
 
     parser.add_argument(
         "--model",
-        default=os.environ.get("LC_AGENT_MODEL", "openai/gpt-oss-120b"),
-        help="Chat model to use (default: openai/gpt-oss-120b or LC_AGENT_MODEL env var)"
+        default=os.environ.get("LC_AGENT_MODEL", "gpt-120b"),
+        help="Chat model to use (default: gpt-120b or LC_AGENT_MODEL env var)"
     )
 
     parser.add_argument(
@@ -97,13 +97,21 @@ async def run_interactive(model: str, assistant_type: str, verbose: bool, stream
         # Try to import chat models if available
         try:
             from lc_agent.chat_models import register_all as register_chat_models
-            register_chat_models()
+            register_chat_models(verbose=verbose)
             if verbose:
-                print("[INFO] Chat models registered")
+                print("[INFO] Chat models registered successfully")
         except ImportError as e:
+            print(f"[ERROR] Failed to import chat models: {e}")
             if verbose:
-                print(f"[WARN] Chat models not available: {e}")
-                print("[WARN] Continuing without them")
+                import traceback
+                traceback.print_exc()
+            sys.exit(1)
+        except Exception as e:
+            print(f"[ERROR] Failed to register chat models: {e}")
+            if verbose:
+                import traceback
+                traceback.print_exc()
+            sys.exit(1)
 
         # Register node types
         get_node_factory().register(RunnableNode)
@@ -212,11 +220,19 @@ async def run_single_query(query: str, model: str, assistant_type: str, verbose:
         # Try to import chat models if available
         try:
             from lc_agent.chat_models import register_all as register_chat_models
-            register_chat_models()
+            register_chat_models(verbose=verbose)
         except ImportError as e:
+            print(f"[ERROR] Failed to import chat models: {e}")
             if verbose:
-                print(f"[WARN] Failed to register chat models: {e}")
-            pass
+                import traceback
+                traceback.print_exc()
+            sys.exit(1)
+        except Exception as e:
+            print(f"[ERROR] Failed to register chat models: {e}")
+            if verbose:
+                import traceback
+                traceback.print_exc()
+            sys.exit(1)
 
         # Register node types
         get_node_factory().register(RunnableNode)

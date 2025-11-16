@@ -11,7 +11,7 @@ import os
 from .chat_nvcf import ChatNVCF
 
 
-def register_all():
+def register_all(verbose=False):
     """Register default NVCF chat models for CLI usage."""
     from lc_agent import get_chat_model_registry
 
@@ -19,48 +19,74 @@ def register_all():
 
     # Get API key from environment
     api_key = os.environ.get("NVIDIA_API_KEY")
+    if verbose:
+        print(f"[DEBUG] Registering NVCF models, API key present: {api_key is not None}")
 
-    # Register openai/gpt-oss-120b as default model
-    registry.register(
-        "openai/gpt-oss-120b",
-        ChatNVCF(
-            model="openai/gpt-oss-120b",
-            max_tokens=4096,
-            temperature=0.1,
-            api_token=api_key,
-        ),
-        None,  # tokenizer (optional)
-        128 * 1024 - 4096,  # max context tokens
-        False,  # not hidden
-    )
+    try:
+        # Register gpt-120b (openai/gpt-oss-120b on NVIDIA Build)
+        if verbose:
+            print("[DEBUG] Registering gpt-120b...")
+        registry.register(
+            "gpt-120b",
+            ChatNVCF(
+                model="openai/gpt-oss-120b",
+                max_tokens=4096,
+                temperature=0.1,
+                api_token=api_key,
+            ),
+            None,  # tokenizer (optional)
+            128 * 1024 - 4096,  # max context tokens
+            False,  # not hidden
+        )
+        if verbose:
+            print("[DEBUG] Successfully registered gpt-120b")
 
-    # Also register as "gpt-4" alias for backward compatibility
-    registry.register(
-        "gpt-4",
-        ChatNVCF(
-            model="openai/gpt-oss-120b",
-            max_tokens=4096,
-            temperature=0.1,
-            api_token=api_key,
-        ),
-        None,
-        128 * 1024 - 4096,
-        False,
-    )
+        # Also register full name for clarity
+        if verbose:
+            print("[DEBUG] Registering openai/gpt-oss-120b...")
+        registry.register(
+            "openai/gpt-oss-120b",
+            ChatNVCF(
+                model="openai/gpt-oss-120b",
+                max_tokens=4096,
+                temperature=0.1,
+                api_token=api_key,
+            ),
+            None,
+            128 * 1024 - 4096,
+            False,
+        )
+        if verbose:
+            print("[DEBUG] Successfully registered openai/gpt-oss-120b")
 
-    # Register meta/llama-4-maverick model as well
-    registry.register(
-        "meta/llama-4-maverick-17b-128e-instruct",
-        ChatNVCF(
-            model="meta/llama-4-maverick-17b-128e-instruct",
-            max_tokens=4096,
-            temperature=0.0,
-            api_token=api_key,
-        ),
-        None,
-        256 * 1024 - 4096,
-        False,
-    )
+        # Register meta/llama-4-maverick model as well
+        if verbose:
+            print("[DEBUG] Registering llama-maverick...")
+        registry.register(
+            "llama-maverick",
+            ChatNVCF(
+                model="meta/llama-4-maverick-17b-128e-instruct",
+                max_tokens=4096,
+                temperature=0.0,
+                api_token=api_key,
+            ),
+            None,
+            256 * 1024 - 4096,
+            False,
+        )
+        if verbose:
+            print("[DEBUG] Successfully registered llama-maverick")
+
+        if verbose:
+            print(f"[DEBUG] Total models in registry: {len(registry._models)}")
+            print(f"[DEBUG] Registered model names: {list(registry._models.keys())}")
+
+    except Exception as e:
+        print(f"[ERROR] Failed to register chat models: {e}")
+        if verbose:
+            import traceback
+            traceback.print_exc()
+        raise
 
 
 __all__ = ["ChatNVCF", "register_all"]

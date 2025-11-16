@@ -76,7 +76,7 @@ For rapid iteration on the LC Agent framework without building Kit extensions:
 
 **Examples**:
 ```bash
-# Interactive mode (uses openai/gpt-oss-120b by default)
+# Interactive mode (uses gpt-120b by default)
 ./run-lc-agent.sh
 
 # Single query
@@ -86,8 +86,13 @@ For rapid iteration on the LC Agent framework without building Kit extensions:
 ./run-lc-agent.sh --assistant usd
 
 # Use a different model
-./run-lc-agent.sh --model "meta/llama-4-maverick-17b-128e-instruct"
+./run-lc-agent.sh --model llama-maverick
+
+# Verbose mode for debugging
+./run-lc-agent.sh --verbose --query "Hello"
 ```
+
+**Available models**: `gpt-120b` (default), `openai/gpt-oss-120b`, `llama-maverick`
 
 This approach allows you to:
 - Quickly test changes to the LC Agent core framework
