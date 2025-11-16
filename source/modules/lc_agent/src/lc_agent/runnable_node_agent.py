@@ -8,13 +8,16 @@
 ##
 
 from .runnable_node import RunnableNode
-from langchain import hub
+from langchainhub import Client
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables.base import RunnableLambda
 from typing import List
 from typing import Union
 from typing import Dict
 from typing import Any
+
+# Create a hub client instance for pulling prompts
+hub = Client()
 
 
 class RunnableNodeAgent(RunnableNode):

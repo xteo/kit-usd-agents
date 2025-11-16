@@ -7,6 +7,11 @@
 ## license agreement from NVIDIA CORPORATION is strictly prohibited.
 ##
 
-from .chat_nvcf import ChatNVCF
+"""
+Entry point for python -m lc_agent_cli
+"""
 
-__all__ = ["ChatNVCF"]
+from .cli import main
+
+if __name__ == "__main__":
+    main()
