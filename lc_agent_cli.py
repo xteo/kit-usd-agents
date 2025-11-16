@@ -49,8 +49,8 @@ For more information, see claude.md in the repository root.
 
     parser.add_argument(
         "--model",
-        default=os.environ.get("LC_AGENT_MODEL", "gpt-4"),
-        help="Chat model to use (default: gpt-4 or LC_AGENT_MODEL env var)"
+        default=os.environ.get("LC_AGENT_MODEL", "openai/gpt-oss-120b"),
+        help="Chat model to use (default: openai/gpt-oss-120b or LC_AGENT_MODEL env var)"
     )
 
     parser.add_argument(
@@ -86,15 +86,24 @@ async def run_interactive(model: str, assistant_type: str, verbose: bool, stream
     try:
         from lc_agent import RunnableNetwork, RunnableNode, get_node_factory
 
+        # Check for NVIDIA API key
+        if not os.environ.get("NVIDIA_API_KEY"):
+            print("[WARN] NVIDIA_API_KEY environment variable not set.")
+            print("       Set it to use NVIDIA models:")
+            print("       export NVIDIA_API_KEY=your_key_here  # Linux/Mac")
+            print("       set NVIDIA_API_KEY=your_key_here     # Windows")
+            print()
+
         # Try to import chat models if available
         try:
             from lc_agent.chat_models import register_all as register_chat_models
             register_chat_models()
             if verbose:
                 print("[INFO] Chat models registered")
-        except ImportError:
+        except ImportError as e:
             if verbose:
-                print("[WARN] Chat models not available, continuing without them")
+                print(f"[WARN] Chat models not available: {e}")
+                print("[WARN] Continuing without them")
 
         # Register node types
         get_node_factory().register(RunnableNode)
@@ -191,11 +200,22 @@ async def run_single_query(query: str, model: str, assistant_type: str, verbose:
     try:
         from lc_agent import RunnableNetwork, RunnableNode, get_node_factory, RunnableHumanNode
 
+        # Check for NVIDIA API key
+        if not os.environ.get("NVIDIA_API_KEY"):
+            print("[ERROR] NVIDIA_API_KEY environment variable not set.")
+            print("        Set it to use NVIDIA models:")
+            print("        export NVIDIA_API_KEY=your_key_here  # Linux/Mac")
+            print("        set NVIDIA_API_KEY=your_key_here     # Windows")
+            print()
+            sys.exit(1)
+
         # Try to import chat models if available
         try:
             from lc_agent.chat_models import register_all as register_chat_models
             register_chat_models()
-        except ImportError:
+        except ImportError as e:
+            if verbose:
+                print(f"[WARN] Failed to register chat models: {e}")
             pass
 
         # Register node types

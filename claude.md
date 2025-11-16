@@ -20,7 +20,26 @@ This document provides essential information for AI assistants (like Claude) wor
 
 The LC Agent module is the core component you'll likely iterate on most frequently. Here's how to set it up for local development:
 
-#### 1. Create a Python Virtual Environment
+#### 1. Set up NVIDIA API Key
+
+The LC Agent CLI uses NVIDIA Cloud Functions (NVCF) models by default. You'll need an NVIDIA API key:
+
+```bash
+# Linux/Mac
+export NVIDIA_API_KEY=nvapi-your-key-here
+
+# Windows PowerShell
+$env:NVIDIA_API_KEY="nvapi-your-key-here"
+
+# Windows CMD
+set NVIDIA_API_KEY=nvapi-your-key-here
+```
+
+To make this permanent, add it to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) or Windows environment variables.
+
+**Get your API key**: Visit [NVIDIA API Catalog](https://build.nvidia.com) to get a free API key.
+
+#### 2. Create a Python Virtual Environment
 
 ```bash
 # Linux/Mac
@@ -32,7 +51,7 @@ python -m venv venv
 venv\Scripts\activate
 ```
 
-#### 2. Install LC Agent in Editable Mode
+#### 3. Install LC Agent in Editable Mode
 
 ```bash
 # Linux/Mac
@@ -57,10 +76,10 @@ This installs the `lc_agent` module in editable mode, meaning changes to the sou
   - tiktoken
   - toml
 
-#### 3. Run the CLI
+#### 4. Run the CLI
 
 ```bash
-# Interactive mode
+# Interactive mode (uses openai/gpt-oss-120b by default)
 ./run-lc-agent.sh
 
 # Single query
@@ -69,8 +88,8 @@ This installs the `lc_agent` module in editable mode, meaning changes to the sou
 # Use USD assistant mode
 ./run-lc-agent.sh --assistant usd
 
-# With custom model
-./run-lc-agent.sh --model gpt-4
+# Use a different NVIDIA model
+./run-lc-agent.sh --model "meta/llama-4-maverick-17b-128e-instruct"
 
 # Help
 ./run-lc-agent.sh --help
@@ -80,6 +99,13 @@ This installs the `lc_agent` module in editable mode, meaning changes to the sou
 ```batch
 run-lc-agent.bat --query "Explain USD prims"
 ```
+
+**Available Models** (via NVCF):
+- `openai/gpt-oss-120b` - Default, good balance of speed and quality
+- `meta/llama-4-maverick-17b-128e-instruct` - Fast, efficient model
+- `gpt-4` - Alias for openai/gpt-oss-120b
+
+**Note**: The CLI defaults to `openai/gpt-oss-120b` which runs on NVIDIA's infrastructure for free with an API key.
 
 ### Module Structure
 

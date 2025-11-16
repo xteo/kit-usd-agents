@@ -44,7 +44,15 @@ Build and run the complete Chat USD application with Omniverse Kit:
 
 For rapid iteration on the LC Agent framework without building Kit extensions:
 
-1. **Create a virtual environment**:
+1. **Set up NVIDIA API Key** (required for CLI):
+   ```bash
+   # Get a free key from https://build.nvidia.com
+   export NVIDIA_API_KEY=nvapi-your-key-here  # Linux/Mac
+   # or
+   set NVIDIA_API_KEY=nvapi-your-key-here  # Windows
+   ```
+
+2. **Create a virtual environment**:
    ```bash
    python3 -m venv venv
    source venv/bin/activate  # Linux/Mac
@@ -52,14 +60,14 @@ For rapid iteration on the LC Agent framework without building Kit extensions:
    venv\Scripts\activate  # Windows
    ```
 
-2. **Install LC Agent in editable mode**:
+3. **Install LC Agent in editable mode**:
    ```bash
    ./dev-install.sh  # Linux/Mac
    # or
    dev-install.bat  # Windows
    ```
 
-3. **Run the CLI**:
+4. **Run the CLI**:
    ```bash
    ./run-lc-agent.sh --help  # Linux/Mac
    # or
@@ -68,7 +76,7 @@ For rapid iteration on the LC Agent framework without building Kit extensions:
 
 **Examples**:
 ```bash
-# Interactive mode
+# Interactive mode (uses openai/gpt-oss-120b by default)
 ./run-lc-agent.sh
 
 # Single query
@@ -76,6 +84,9 @@ For rapid iteration on the LC Agent framework without building Kit extensions:
 
 # USD assistant mode
 ./run-lc-agent.sh --assistant usd
+
+# Use a different model
+./run-lc-agent.sh --model "meta/llama-4-maverick-17b-128e-instruct"
 ```
 
 This approach allows you to:
