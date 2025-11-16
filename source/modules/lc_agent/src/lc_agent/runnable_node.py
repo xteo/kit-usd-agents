@@ -12,7 +12,7 @@ from .node_factory import get_node_factory
 from .utils.culling import _cull_messages
 from .utils.profiling_utils import Profiler
 from .uuid_utils import UUIDMixin
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks.base import BaseCallbackManager
 from langchain_core.messages import (

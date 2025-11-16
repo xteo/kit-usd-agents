@@ -74,12 +74,19 @@ print_info ""
 
 cd "$SCRIPT_DIR/source/modules/lc_agent"
 
+# Upgrade pip first
+print_info "Upgrading pip..."
+$PYTHON_CMD -m pip install --upgrade pip || print_warn "Failed to upgrade pip, continuing anyway..."
+
+print_info ""
 if [[ "$INSTALL_MODE" == "editable" || "$INSTALL_MODE" == "-e" ]]; then
     print_info "Installing in editable mode (changes to source will be reflected immediately)..."
-    $PYTHON_CMD -m pip install -e .
+    print_info "Running: pip install -e ."
+    $PYTHON_CMD -m pip install -e . --verbose
 else
     print_info "Installing in regular mode..."
-    $PYTHON_CMD -m pip install .
+    print_info "Running: pip install ."
+    $PYTHON_CMD -m pip install . --verbose
 fi
 
 print_info ""

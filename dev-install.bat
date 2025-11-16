@@ -56,19 +56,32 @@ echo.
 
 cd "%SCRIPT_DIR%\source\modules\lc_agent"
 
+REM Upgrade pip first
+echo Upgrading pip...
+%PYTHON% -m pip install --upgrade pip
+if errorlevel 1 (
+    echo [WARN] Failed to upgrade pip, continuing anyway...
+)
+
+echo.
 if "%INSTALL_MODE%"=="editable" (
     echo Installing in editable mode ^(changes to source will be reflected immediately^)...
-    %PYTHON% -m pip install -e .
+    echo Running: pip install -e .
+    %PYTHON% -m pip install -e . --verbose
 ) else if "%INSTALL_MODE%"=="-e" (
     echo Installing in editable mode ^(changes to source will be reflected immediately^)...
-    %PYTHON% -m pip install -e .
+    echo Running: pip install -e .
+    %PYTHON% -m pip install -e . --verbose
 ) else (
     echo Installing in regular mode...
-    %PYTHON% -m pip install .
+    echo Running: pip install .
+    %PYTHON% -m pip install . --verbose
 )
 
 if errorlevel 1 (
+    echo.
     echo [ERROR] Installation failed!
+    echo Please check the error messages above.
     exit /b 1
 )
 
