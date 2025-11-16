@@ -78,8 +78,9 @@ def register_all(verbose=False):
             print("[DEBUG] Successfully registered llama-maverick")
 
         if verbose:
-            print(f"[DEBUG] Total models in registry: {len(registry._models)}")
-            print(f"[DEBUG] Registered model names: {list(registry._models.keys())}")
+            print(f"[DEBUG] Total models in registry: {len(registry.registered_names)}")
+            print(f"[DEBUG] Registered model names: {registry.get_registered_names()}")
+            print(f"[DEBUG] All registered names (including hidden): {registry.registered_names}")
 
     except Exception as e:
         print(f"[ERROR] Failed to register chat models: {e}")
