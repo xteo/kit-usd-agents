@@ -46,10 +46,12 @@ class TimedDemoNode(RunnableNode):
         self.start_time = None
         self.end_time = None
 
-    async def ainvoke(self, input=None, config=None, **kwargs):
-        if self.invoked:
-            return self.outputs
+    def _get_chat_model(self, chat_model_name, chat_model_input, input, config):
+        """Override to skip chat model retrieval."""
+        return None
 
+    async def _ainvoke_chat_model(self, chat_model, chat_model_input, input, config, **kwargs):
+        """Override to add timing and delay without calling LLM."""
         self.start_time = time.time()
         TimedDemoNode.execution_events.append(f"[{time.time():.3f}] {self.node_name} STARTED")
 
@@ -60,9 +62,7 @@ class TimedDemoNode(RunnableNode):
         self.end_time = time.time()
         TimedDemoNode.execution_events.append(f"[{time.time():.3f}] {self.node_name} FINISHED")
 
-        self.outputs = AIMessage(content=f"{self.node_name} result")
-        self.invoked = True
-        return self.outputs
+        return AIMessage(content=f"{self.node_name} result")
 
 
 def print_header(title):
@@ -138,10 +138,10 @@ async def test_diamond_graph():
         node_c.parents = [node_a]
         node_d.parents = [node_b, node_c]
 
-    # Execute and time
-    print("Executing network...")
+    # Execute and time - invoke the leaf node directly to trigger parallel execution
+    print("Executing network (invoking leaf node D)...")
     start = time.time()
-    await network.ainvoke()
+    await node_d.ainvoke()
     total_time = time.time() - start
 
     # Print results
@@ -185,10 +185,10 @@ async def test_wide_graph():
         node_e.parents = [node_a]
         node_f.parents = [node_b, node_c, node_d, node_e]
 
-    # Execute and time
-    print("Executing network...")
+    # Execute and time - invoke the leaf node directly to trigger parallel execution
+    print("Executing network (invoking leaf node F)...")
     start = time.time()
-    await network.ainvoke()
+    await node_f.ainvoke()
     total_time = time.time() - start
 
     # Print results
