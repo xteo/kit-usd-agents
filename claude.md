@@ -79,7 +79,7 @@ This installs the `lc_agent` module in editable mode, meaning changes to the sou
 #### 4. Run the CLI
 
 ```bash
-# Interactive mode (uses openai/gpt-oss-120b by default)
+# Interactive mode (uses gpt-120b by default)
 ./run-lc-agent.sh
 
 # Single query
@@ -89,7 +89,10 @@ This installs the `lc_agent` module in editable mode, meaning changes to the sou
 ./run-lc-agent.sh --assistant usd
 
 # Use a different NVIDIA model
-./run-lc-agent.sh --model "meta/llama-4-maverick-17b-128e-instruct"
+./run-lc-agent.sh --model llama-maverick
+
+# Verbose mode for debugging
+./run-lc-agent.sh --verbose --query "Hello"
 
 # Help
 ./run-lc-agent.sh --help
@@ -98,14 +101,15 @@ This installs the `lc_agent` module in editable mode, meaning changes to the sou
 **Windows:**
 ```batch
 run-lc-agent.bat --query "Explain USD prims"
+run-lc-agent.bat --verbose --query "Hello"
 ```
 
 **Available Models** (via NVCF):
-- `openai/gpt-oss-120b` - Default, good balance of speed and quality
-- `meta/llama-4-maverick-17b-128e-instruct` - Fast, efficient model
-- `gpt-4` - Alias for openai/gpt-oss-120b
+- `gpt-120b` - Default, GPT-4 class model (openai/gpt-oss-120b on NVIDIA Build)
+- `openai/gpt-oss-120b` - Full name alias for gpt-120b
+- `llama-maverick` - Fast Llama 4 model (meta/llama-4-maverick-17b-128e-instruct)
 
-**Note**: The CLI defaults to `openai/gpt-oss-120b` which runs on NVIDIA's infrastructure for free with an API key.
+**Note**: The CLI defaults to `gpt-120b` which runs on NVIDIA's infrastructure for free with an API key.
 
 ### Module Structure
 
