@@ -51,11 +51,8 @@ if "%VIRTUAL_ENV%"=="" (
 )
 
 echo.
-echo Installing LC Agent CLI module...
-echo ^(This will also install lc_agent in editable mode^)
+echo Installing LC Agent modules...
 echo.
-
-cd "%SCRIPT_DIR%\source\modules\lc_agent_cli"
 
 REM Upgrade pip first
 echo Upgrading pip...
@@ -64,17 +61,41 @@ if errorlevel 1 (
     echo [WARN] Failed to upgrade pip, continuing anyway...
 )
 
+REM Install lc_agent first
 echo.
+echo Step 1/2: Installing lc_agent ^(core framework^)...
+cd "%SCRIPT_DIR%\source\modules\lc_agent"
+
 if "%INSTALL_MODE%"=="editable" (
-    echo Installing in editable mode ^(changes to source will be reflected immediately^)...
     echo Running: pip install -e .
     %PYTHON% -m pip install -e . --verbose
 ) else if "%INSTALL_MODE%"=="-e" (
-    echo Installing in editable mode ^(changes to source will be reflected immediately^)...
     echo Running: pip install -e .
     %PYTHON% -m pip install -e . --verbose
 ) else (
-    echo Installing in regular mode...
+    echo Running: pip install .
+    %PYTHON% -m pip install . --verbose
+)
+
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Installation of lc_agent failed!
+    echo Please check the error messages above.
+    exit /b 1
+)
+
+REM Install lc_agent_cli
+echo.
+echo Step 2/2: Installing lc_agent_cli ^(CLI with NVIDIA model support^)...
+cd "%SCRIPT_DIR%\source\modules\lc_agent_cli"
+
+if "%INSTALL_MODE%"=="editable" (
+    echo Running: pip install -e .
+    %PYTHON% -m pip install -e . --verbose
+) else if "%INSTALL_MODE%"=="-e" (
+    echo Running: pip install -e .
+    %PYTHON% -m pip install -e . --verbose
+) else (
     echo Running: pip install .
     %PYTHON% -m pip install . --verbose
 )

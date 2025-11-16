@@ -69,23 +69,35 @@ if [[ -z "${VIRTUAL_ENV}" ]]; then
 fi
 
 print_info ""
-print_info "Installing LC Agent CLI module..."
-print_info "(This will also install lc_agent in editable mode)"
+print_info "Installing LC Agent modules..."
 print_info ""
-
-cd "$SCRIPT_DIR/source/modules/lc_agent_cli"
 
 # Upgrade pip first
 print_info "Upgrading pip..."
 $PYTHON_CMD -m pip install --upgrade pip || print_warn "Failed to upgrade pip, continuing anyway..."
 
+# Install lc_agent first
 print_info ""
+print_info "Step 1/2: Installing lc_agent (core framework)..."
+cd "$SCRIPT_DIR/source/modules/lc_agent"
+
 if [[ "$INSTALL_MODE" == "editable" || "$INSTALL_MODE" == "-e" ]]; then
-    print_info "Installing in editable mode (changes to source will be reflected immediately)..."
     print_info "Running: pip install -e ."
     $PYTHON_CMD -m pip install -e . --verbose
 else
-    print_info "Installing in regular mode..."
+    print_info "Running: pip install ."
+    $PYTHON_CMD -m pip install . --verbose
+fi
+
+# Install lc_agent_cli
+print_info ""
+print_info "Step 2/2: Installing lc_agent_cli (CLI with NVIDIA model support)..."
+cd "$SCRIPT_DIR/source/modules/lc_agent_cli"
+
+if [[ "$INSTALL_MODE" == "editable" || "$INSTALL_MODE" == "-e" ]]; then
+    print_info "Running: pip install -e ."
+    $PYTHON_CMD -m pip install -e . --verbose
+else
     print_info "Running: pip install ."
     $PYTHON_CMD -m pip install . --verbose
 fi

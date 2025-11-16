@@ -18,6 +18,8 @@ def req_file(filename, folder="."):
     lines = [x.strip() for x in content]
     lines = [x for x in lines if x]
     lines = [x for x in lines if not x.startswith("#")]
+    # Filter out pip-specific flags like -e (editable installs) and -r (include files)
+    lines = [x for x in lines if not x.startswith("-")]
 
     return lines
 
