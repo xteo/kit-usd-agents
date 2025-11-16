@@ -14,13 +14,20 @@ from .chat_nvcf import ChatNVCF
 def register_all(verbose=False):
     """Register default NVCF chat models for CLI usage."""
     from lc_agent import get_chat_model_registry
+    from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
     registry = get_chat_model_registry()
 
     # Get API key from environment
     api_key = os.environ.get("NVIDIA_API_KEY")
     if verbose:
-        print(f"[DEBUG] Registering NVCF models, API key present: {api_key is not None}")
+        print(f"[DEBUG] Registering NVIDIA models, API key present: {api_key is not None}")
+
+    if not api_key:
+        print("[WARN] NVIDIA_API_KEY not set, models may not work")
+
+    # Base URL for NVIDIA API
+    base_url = "https://integrate.api.nvidia.com/v1"
 
     try:
         # Register gpt-120b (openai/gpt-oss-120b on NVIDIA Build)
@@ -28,11 +35,12 @@ def register_all(verbose=False):
             print("[DEBUG] Registering gpt-120b...")
         registry.register(
             "gpt-120b",
-            ChatNVCF(
+            ChatNVIDIA(
                 model="openai/gpt-oss-120b",
+                api_key=api_key,
+                base_url=base_url,
                 max_tokens=4096,
                 temperature=0.1,
-                api_token=api_key,
             ),
             None,  # tokenizer (optional)
             128 * 1024 - 4096,  # max context tokens
@@ -46,11 +54,12 @@ def register_all(verbose=False):
             print("[DEBUG] Registering openai/gpt-oss-120b...")
         registry.register(
             "openai/gpt-oss-120b",
-            ChatNVCF(
+            ChatNVIDIA(
                 model="openai/gpt-oss-120b",
+                api_key=api_key,
+                base_url=base_url,
                 max_tokens=4096,
                 temperature=0.1,
-                api_token=api_key,
             ),
             None,
             128 * 1024 - 4096,
@@ -64,11 +73,12 @@ def register_all(verbose=False):
             print("[DEBUG] Registering llama-maverick...")
         registry.register(
             "llama-maverick",
-            ChatNVCF(
+            ChatNVIDIA(
                 model="meta/llama-4-maverick-17b-128e-instruct",
+                api_key=api_key,
+                base_url=base_url,
                 max_tokens=4096,
                 temperature=0.0,
-                api_token=api_key,
             ),
             None,
             256 * 1024 - 4096,

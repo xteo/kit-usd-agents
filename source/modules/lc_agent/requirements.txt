@@ -8,6 +8,7 @@ langchain-core
 aiohttp
 aioredis==2.0.1
 langchain
+langchain-nvidia-ai-endpoints
 langchainhub
 libcst==1.5.0
 requests
