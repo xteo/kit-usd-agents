@@ -328,15 +328,32 @@ class ChatNVCF(SimpleChatModel):
         nvcf_call = NvcfCallAsync(payload, header, self._invoke_url)
 
         response = None
-        # print("payload", json.dumps(payload, indent=2))
-        async for response in nvcf_call:
-            if response is None or "choices" not in response or not response["choices"]:
-                if response and "error" in response:
-                    print("Error: [ChatNVCF]", response["error"])
-                continue
+        chunk_count = 0
+        try:
+            async for response in nvcf_call:
+                if response is None or "choices" not in response or not response["choices"]:
+                    if response and "error" in response:
+                        error_msg = f"Error: [ChatNVCF] {response['error']}"
+                        print(error_msg)
+                        # Yield an error message as content
+                        yield ChatGenerationChunk(message=AIMessageChunk(content=error_msg))
+                        return
+                    continue
 
-            content = response["choices"][0]["delta"]["content"]
-            yield ChatGenerationChunk(message=AIMessageChunk(content=str(content)))
+                content = response["choices"][0]["delta"].get("content", "")
+                if content:  # Only yield if there's actual content
+                    chunk_count += 1
+                    yield ChatGenerationChunk(message=AIMessageChunk(content=str(content)))
+        except Exception as e:
+            error_msg = f"Error during NVCF streaming: {e}"
+            print(error_msg)
+            yield ChatGenerationChunk(message=AIMessageChunk(content=error_msg))
+
+        # If no chunks were yielded, provide helpful error
+        if chunk_count == 0:
+            error_msg = "No response received from NVCF API. Please check your API key and internet connection."
+            print(error_msg)
+            yield ChatGenerationChunk(message=AIMessageChunk(content=error_msg))
 
     @property
     def _llm_type(self) -> str:

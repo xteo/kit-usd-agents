@@ -1,0 +1,7 @@
+# LC Agent CLI dependencies
+
+# Install lc_agent from parent directory in editable mode
+-e ../lc_agent
+
+# NVIDIA AI Endpoints for model support
+langchain-nvidia-ai-endpoints

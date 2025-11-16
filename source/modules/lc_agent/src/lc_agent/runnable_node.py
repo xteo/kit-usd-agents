@@ -12,10 +12,7 @@ from .node_factory import get_node_factory
 from .utils.culling import _cull_messages
 from .utils.profiling_utils import Profiler
 from .uuid_utils import UUIDMixin
-try:
-    from langchain.prompts import ChatPromptTemplate
-except ImportError:
-    from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks.base import BaseCallbackManager
 from langchain_core.messages import (
@@ -1282,14 +1279,14 @@ class RunnableNode(RunnableSerializable[Input, Output], UUIDMixin):
         last_message = None
         for message in system_messages + other_messages:
             if last_message is None:
-                last_message = message.copy()
+                last_message = message.model_copy() if hasattr(message, 'model_copy') else message.copy()
                 chat_model_input.append(last_message)
             else:
                 # if the same type
                 if type(last_message) is type(message) and not isinstance(message, ToolMessage):
                     last_message.content += "\n\n" + str(message.content)
                 elif message:
-                    last_message = message.copy()
+                    last_message = message.model_copy() if hasattr(message, 'model_copy') else message.copy()
                     chat_model_input.append(last_message)
 
         chat_model_input = self._reorder_tool_messages(chat_model_input)
