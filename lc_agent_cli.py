@@ -145,7 +145,7 @@ async def run_interactive(model: str, assistant_type: str, verbose: bool, stream
                     continue
 
                 # Create network and process query
-                from lc_agent.runnable_node import RunnableHumanNode
+                from lc_agent import RunnableHumanNode
                 get_node_factory().register(RunnableHumanNode)
 
                 with RunnableNetwork(
@@ -189,8 +189,7 @@ async def run_interactive(model: str, assistant_type: str, verbose: bool, stream
 async def run_single_query(query: str, model: str, assistant_type: str, verbose: bool, stream: bool):
     """Run a single query and exit."""
     try:
-        from lc_agent import RunnableNetwork, RunnableNode, get_node_factory
-        from lc_agent.runnable_node import RunnableHumanNode
+        from lc_agent import RunnableNetwork, RunnableNode, get_node_factory, RunnableHumanNode
 
         # Try to import chat models if available
         try:
