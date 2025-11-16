@@ -33,9 +33,58 @@ Chat USD is a specialized AI assistant that enables natural language interaction
 
 ## Getting Started
 
-1. Build: `build.bat -r`
-2. Run: `_build\windows-x86_64\release\omni.app.chat_usd.bat`
+### Full Kit Extension Build
+
+Build and run the complete Chat USD application with Omniverse Kit:
+
+1. Build: `./build.sh -r` (Linux/Mac) or `build.bat -r` (Windows)
+2. Run: `_build/windows-x86_64/release/omni.app.chat_usd.bat` (Windows) or similar path for Linux
+
+### LC Agent Development (Python Module)
+
+For rapid iteration on the LC Agent framework without building Kit extensions:
+
+1. **Create a virtual environment**:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # Linux/Mac
+   # or
+   venv\Scripts\activate  # Windows
+   ```
+
+2. **Install LC Agent in editable mode**:
+   ```bash
+   ./dev-install.sh  # Linux/Mac
+   # or
+   dev-install.bat  # Windows
+   ```
+
+3. **Run the CLI**:
+   ```bash
+   ./run-lc-agent.sh --help  # Linux/Mac
+   # or
+   run-lc-agent.bat --help  # Windows
+   ```
+
+**Examples**:
+```bash
+# Interactive mode
+./run-lc-agent.sh
+
+# Single query
+./run-lc-agent.sh --query "Explain USD prims"
+
+# USD assistant mode
+./run-lc-agent.sh --assistant usd
+```
+
+This approach allows you to:
+- Quickly test changes to the LC Agent core framework
+- Develop and debug agent logic without Kit dependencies
+- Run unit tests and experiments in a lightweight environment
 
 ## Documentation
 
-For detailed documentation on Chat USD architecture, components, and how to extend it with custom agents, see the documentation in source/extensions/omni.ai.chat_usd.bundle/docs/README.md
+- **Development Guide**: See `claude.md` for detailed development workflow and AI assistant guidance
+- **LC Agent**: `source/modules/lc_agent/README.md` - Core agent framework documentation
+- **Chat USD**: `source/extensions/omni.ai.chat_usd.bundle/docs/` - Full extension documentation
