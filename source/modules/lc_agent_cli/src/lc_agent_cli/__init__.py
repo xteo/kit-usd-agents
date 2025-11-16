@@ -7,6 +7,6 @@
 ## license agreement from NVIDIA CORPORATION is strictly prohibited.
 ##
 
-from .chat_nvcf import ChatNVCF
+from .register_models import register_all
 
-__all__ = ["ChatNVCF"]
+__all__ = ["register_all"]

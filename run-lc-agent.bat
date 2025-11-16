@@ -15,20 +15,20 @@ set SCRIPT_DIR=%~dp0
 REM Use the Python from the environment, or default to python
 if "%PYTHON%"=="" set PYTHON=python
 
-REM Check if lc_agent is installed
-%PYTHON% -c "import lc_agent" 2>nul
+REM Check if lc_agent_cli is installed
+%PYTHON% -c "import lc_agent_cli" 2>nul
 if errorlevel 1 (
-    echo [ERROR] lc_agent is not installed in the current Python environment
+    echo [ERROR] lc_agent_cli is not installed in the current Python environment
     echo.
     echo Please run the installation script first:
     echo   dev-install.bat
     echo.
     echo Or install it manually:
-    echo   cd source\modules\lc_agent ^&^& pip install -e .
+    echo   cd source\modules\lc_agent_cli ^&^& pip install -e .
     exit /b 1
 )
 
 REM Run the CLI with all arguments passed through
-%PYTHON% "%SCRIPT_DIR%lc_agent_cli.py" %*
+%PYTHON% -m lc_agent_cli %*
 
 endlocal

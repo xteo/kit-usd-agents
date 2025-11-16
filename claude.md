@@ -8,17 +8,18 @@ This document provides essential information for AI assistants (like Claude) wor
 
 ### Key Components
 
-1. **LC Agent** (`source/modules/lc_agent/`) - Core AI agent framework built on LangChain
-2. **USD Agents** (`source/modules/agents/usd/`) - USD-specific agent implementations
-3. **RAG Components** (`source/modules/rags/`) - Retrieval-augmented generation modules
-4. **AIQ Integration** (`source/modules/aiq/`) - NVIDIA NeMo Agent Toolkit integration
-5. **Extensions** (`source/extensions/`) - Omniverse Kit extensions
+1. **LC Agent** (`source/modules/lc_agent/`) - Core AI agent framework built on LangChain (generic, model-agnostic)
+2. **LC Agent CLI** (`source/modules/lc_agent_cli/`) - Command-line interface with NVIDIA model support
+3. **USD Agents** (`source/modules/agents/usd/`) - USD-specific agent implementations
+4. **RAG Components** (`source/modules/rags/`) - Retrieval-augmented generation modules
+5. **AIQ Integration** (`source/modules/aiq/`) - NVIDIA NeMo Agent Toolkit integration
+6. **Extensions** (`source/extensions/`) - Omniverse Kit extensions
 
 ## LC Agent Development Workflow
 
 ### Quick Start for Development
 
-The LC Agent module is the core component you'll likely iterate on most frequently. Here's how to set it up for local development:
+The LC Agent module is the core component you'll likely iterate on most frequently. The `lc_agent_cli` module provides a convenient CLI for testing and evaluating the core `lc_agent` framework. Here's how to set it up for local development:
 
 #### 1. Set up NVIDIA API Key
 
@@ -51,7 +52,7 @@ python -m venv venv
 venv\Scripts\activate
 ```
 
-#### 3. Install LC Agent in Editable Mode
+#### 3. Install LC Agent CLI in Editable Mode
 
 ```bash
 # Linux/Mac
@@ -61,47 +62,64 @@ venv\Scripts\activate
 dev-install.bat
 ```
 
-This installs the `lc_agent` module in editable mode, meaning changes to the source code are immediately reflected without reinstallation.
+This installs the `lc_agent_cli` module in editable mode, which also installs `lc_agent` as a dependency in editable mode. Changes to either module's source code are immediately reflected without reinstallation.
 
-**Location**: `source/modules/lc_agent/`
+**Locations**:
+- CLI module: `source/modules/lc_agent_cli/`
+- Core module: `source/modules/lc_agent/`
 
 **What gets installed**:
-- Main package: `lc_agent` (from `source/modules/lc_agent/src/lc_agent/`)
-- Dependencies from `requirements.txt`:
-  - langchain-core
-  - langchain
-  - langchainhub
-  - aioredis
-  - libcst
-  - tiktoken
-  - toml
+- `lc_agent_cli` - CLI with NVIDIA model registration
+- `lc_agent` - Core framework (installed automatically as dependency)
+- `lc-agent` command-line tool
+
+**Dependencies**:
+- Core (`lc_agent`): langchain-core, langchain, langchainhub, aioredis, libcst, tiktoken, toml, aiohttp, requests
+- CLI (`lc_agent_cli`): langchain-nvidia-ai-endpoints (for NVIDIA models)
 
 #### 4. Run the CLI
 
+You can run the CLI in three ways:
+
+**Option 1: Using the installed command**
 ```bash
-# Interactive mode (uses gpt-120b by default)
-./run-lc-agent.sh
-
-# Single query
-./run-lc-agent.sh --query "Explain USD prims"
-
-# Use USD assistant mode
-./run-lc-agent.sh --assistant usd
-
-# Use a different NVIDIA model
-./run-lc-agent.sh --model llama-maverick
-
-# Verbose mode for debugging
-./run-lc-agent.sh --verbose --query "Hello"
-
-# Help
-./run-lc-agent.sh --help
+lc-agent                              # Interactive mode
+lc-agent --query "Explain USD prims"  # Single query
+lc-agent --help                       # Show all options
 ```
 
-**Windows:**
-```batch
+**Option 2: Using wrapper scripts**
+```bash
+# Linux/Mac
+./run-lc-agent.sh
+./run-lc-agent.sh --query "Explain USD prims"
+
+# Windows
+run-lc-agent.bat
 run-lc-agent.bat --query "Explain USD prims"
-run-lc-agent.bat --verbose --query "Hello"
+```
+
+**Option 3: Using Python module**
+```bash
+python -m lc_agent_cli --query "Explain USD prims"
+```
+
+**CLI Options:**
+```bash
+# Interactive mode (uses gpt-120b by default)
+lc-agent
+
+# Single query
+lc-agent --query "Explain USD prims"
+
+# Use USD assistant mode
+lc-agent --assistant usd
+
+# Use a different NVIDIA model
+lc-agent --model llama-maverick
+
+# Verbose mode for debugging
+lc-agent --verbose --query "Hello"
 ```
 
 **Available Models** (via NVCF):
@@ -113,6 +131,7 @@ run-lc-agent.bat --verbose --query "Hello"
 
 ### Module Structure
 
+**Core LC Agent** (generic, model-agnostic):
 ```
 source/modules/lc_agent/
 ├── src/lc_agent/           # Main source code
@@ -123,14 +142,27 @@ source/modules/lc_agent/
 │   ├── node_factory.py     # Node type registry
 │   ├── multi_agent_network_node.py  # Multi-agent coordination
 │   ├── usd_assistant.py    # USD-specific assistant
-│   ├── chat_models/        # Chat model integrations
+│   ├── chat_models/        # Chat model base classes
 │   ├── code_atlas/         # Code analysis and tools
 │   └── utils/              # Utilities (profiling, etc.)
 ├── tests/                  # Unit tests
 ├── doc/                    # Documentation
-├── requirements.txt        # Python dependencies
+├── requirements.txt        # Python dependencies (no NVIDIA-specific packages)
 ├── setup.py               # Package configuration
 └── README.md              # Module documentation
+```
+
+**LC Agent CLI** (NVIDIA model support):
+```
+source/modules/lc_agent_cli/
+├── src/lc_agent_cli/
+│   ├── __init__.py         # Exports register_all()
+│   ├── cli.py              # CLI implementation
+│   ├── register_models.py  # NVIDIA model registration
+│   └── __main__.py         # Entry point for python -m
+├── requirements.txt        # Includes -e ../lc_agent and NVIDIA packages
+├── setup.py               # Defines lc-agent console script
+└── README.md              # CLI documentation
 ```
 
 ### Key Concepts
@@ -160,12 +192,21 @@ python -m pytest tests/
 
 ### Making Changes
 
-When iterating on the LC Agent module:
+**When iterating on the core LC Agent framework:**
 
 1. **Edit source files** in `source/modules/lc_agent/src/lc_agent/`
 2. **Changes are immediately active** (editable install)
-3. **Test your changes** with the CLI or unit tests
-4. **Document** significant changes in the module's CHANGELOG.md
+3. **Test your changes** with the CLI: `lc-agent --query "test"`
+4. **Run unit tests**: `cd source/modules/lc_agent && pytest tests/`
+5. **Document** significant changes in the module's CHANGELOG.md
+
+**When adding NVIDIA model support or modifying the CLI:**
+
+1. **Edit CLI files** in `source/modules/lc_agent_cli/src/lc_agent_cli/`
+2. **Changes are immediately active** (editable install)
+3. **Test**: `lc-agent --verbose --query "test"`
+
+**Important**: Keep `lc_agent` generic and model-agnostic. All NVIDIA-specific code goes in `lc_agent_cli`.
 
 ### Related Modules
 
@@ -186,8 +227,9 @@ cd source/modules/aiq/lc_agent_aiq && pip install -e .
 
 ## Environment Variables
 
+- **NVIDIA_API_KEY**: NVIDIA API key for NVCF models (required for CLI, get from https://build.nvidia.com)
 - **PYTHON**: Override Python executable (default: `python3` on Linux/Mac, `python` on Windows)
-- **LC_AGENT_MODEL**: Default chat model for CLI (default: `gpt-4`)
+- **LC_AGENT_MODEL**: Default chat model for CLI (default: `gpt-120b`)
 
 ## Common Tasks
 
@@ -254,22 +296,23 @@ This builds all extensions and creates the full Chat USD application in `_build/
 ## Tips for AI Assistants
 
 1. **Focus on LC Agent**: Most development iteration happens in `source/modules/lc_agent/`
-2. **Use editable install**: Always install with `-e` flag for rapid iteration
-3. **Test frequently**: Use the CLI (`run-lc-agent.sh`) to quickly test changes
-4. **Check examples**: Look at tests in `tests/` for usage patterns
-5. **Read the philosophy**: Understanding the dynamic graph approach is key (see module README)
-6. **Virtual environment**: Always use a virtual environment to avoid conflicts
+2. **Module separation**: Keep `lc_agent` generic; put NVIDIA/model-specific code in `lc_agent_cli`
+3. **Use editable install**: The dev-install scripts install both modules in editable mode
+4. **Test frequently**: Use the CLI (`lc-agent` or `run-lc-agent.sh`) to quickly test changes
+5. **Check examples**: Look at tests in `tests/` for usage patterns
+6. **Read the philosophy**: Understanding the dynamic graph approach is key (see module README)
+7. **Virtual environment**: Always use a virtual environment to avoid conflicts
 
 ## File Locations Summary
 
 | Purpose | File | Description |
 |---------|------|-------------|
-| Dev Install | `dev-install.sh` / `dev-install.bat` | Install lc_agent in editable mode |
-| CLI Runner | `run-lc-agent.sh` / `run-lc-agent.bat` | Run the LC Agent CLI |
-| CLI Script | `lc_agent_cli.py` | Python CLI implementation |
-| LC Agent Source | `source/modules/lc_agent/src/lc_agent/` | Main source code directory |
-| Tests | `source/modules/lc_agent/tests/` | Unit tests |
-| Docs | `source/modules/lc_agent/doc/` | Module documentation |
+| Dev Install | `dev-install.sh` / `dev-install.bat` | Install lc_agent_cli (and lc_agent) in editable mode |
+| CLI Runner | `run-lc-agent.sh` / `run-lc-agent.bat` | Run the LC Agent CLI (wrapper scripts) |
+| CLI Module | `source/modules/lc_agent_cli/` | CLI with NVIDIA model support |
+| LC Agent Source | `source/modules/lc_agent/src/lc_agent/` | Core framework (generic) |
+| LC Agent Tests | `source/modules/lc_agent/tests/` | Core framework unit tests |
+| LC Agent Docs | `source/modules/lc_agent/doc/` | Module documentation |
 
 ## Version Information
 

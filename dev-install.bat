@@ -51,10 +51,11 @@ if "%VIRTUAL_ENV%"=="" (
 )
 
 echo.
-echo Installing LC Agent module...
+echo Installing LC Agent CLI module...
+echo ^(This will also install lc_agent in editable mode^)
 echo.
 
-cd "%SCRIPT_DIR%\source\modules\lc_agent"
+cd "%SCRIPT_DIR%\source\modules\lc_agent_cli"
 
 REM Upgrade pip first
 echo Upgrading pip...
@@ -90,11 +91,16 @@ echo ================================================
 echo Installation complete!
 echo ================================================
 echo.
-echo You can now import lc_agent in your Python scripts:
+echo You can now use the LC Agent CLI:
+echo   lc-agent                      # Interactive mode
+echo   lc-agent --query "your text"  # Single query
+echo   run-lc-agent.bat              # Using wrapper script
+echo.
+echo Or import lc_agent in your Python scripts:
 echo   from lc_agent import RunnableNetwork, RunnableNode
 echo.
-echo To run the CLI assistant:
-echo   run-lc-agent.bat
+echo Set your NVIDIA API key:
+echo   set NVIDIA_API_KEY=your_key_here
 echo.
 echo For more information, see claude.md in the repository root.
 

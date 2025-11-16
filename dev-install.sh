@@ -69,10 +69,11 @@ if [[ -z "${VIRTUAL_ENV}" ]]; then
 fi
 
 print_info ""
-print_info "Installing LC Agent module..."
+print_info "Installing LC Agent CLI module..."
+print_info "(This will also install lc_agent in editable mode)"
 print_info ""
 
-cd "$SCRIPT_DIR/source/modules/lc_agent"
+cd "$SCRIPT_DIR/source/modules/lc_agent_cli"
 
 # Upgrade pip first
 print_info "Upgrading pip..."
@@ -94,10 +95,15 @@ print_info "================================================"
 print_info "Installation complete!"
 print_info "================================================"
 print_info ""
-print_info "You can now import lc_agent in your Python scripts:"
+print_info "You can now use the LC Agent CLI:"
+print_info "  lc-agent                      # Interactive mode"
+print_info "  lc-agent --query \"your text\"  # Single query"
+print_info "  ./run-lc-agent.sh             # Using wrapper script"
+print_info ""
+print_info "Or import lc_agent in your Python scripts:"
 print_info "  from lc_agent import RunnableNetwork, RunnableNode"
 print_info ""
-print_info "To run the CLI assistant:"
-print_info "  ./run-lc-agent.sh"
+print_info "Set your NVIDIA API key:"
+print_info "  export NVIDIA_API_KEY=your_key_here"
 print_info ""
 print_info "For more information, see claude.md in the repository root."

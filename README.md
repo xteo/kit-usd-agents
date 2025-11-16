@@ -25,7 +25,8 @@ Chat USD is a specialized AI assistant that enables natural language interaction
 - `omni.ai.aiq.agent.chat_usd` - Chat USD integration with NVIDIA NeMo Agent Toolkit
 
 ### Modules
-- `lc_agent` - Core LC Agent built on LangChain
+- `lc_agent` - Core LC Agent framework built on LangChain (generic, model-agnostic)
+- `lc_agent_cli` - Command-line interface with NVIDIA model support
 - `agents/usd` - USD-specific agent implementations
 - `data_generation/usdcode` - USD meta-functions for optimized operations
 - `rags` - Retrieval-augmented generation components
@@ -60,36 +61,40 @@ For rapid iteration on the LC Agent framework without building Kit extensions:
    venv\Scripts\activate  # Windows
    ```
 
-3. **Install LC Agent in editable mode**:
+3. **Install LC Agent CLI in editable mode**:
    ```bash
    ./dev-install.sh  # Linux/Mac
    # or
    dev-install.bat  # Windows
    ```
 
+   This installs both `lc_agent_cli` and `lc_agent` in editable mode, allowing you to test changes immediately.
+
 4. **Run the CLI**:
    ```bash
-   ./run-lc-agent.sh --help  # Linux/Mac
+   lc-agent --help  # Using installed command
    # or
-   run-lc-agent.bat --help  # Windows
+   ./run-lc-agent.sh --help  # Using wrapper script (Linux/Mac)
+   # or
+   run-lc-agent.bat --help  # Using wrapper script (Windows)
    ```
 
 **Examples**:
 ```bash
 # Interactive mode (uses gpt-120b by default)
-./run-lc-agent.sh
+lc-agent
 
 # Single query
-./run-lc-agent.sh --query "Explain USD prims"
+lc-agent --query "Explain USD prims"
 
 # USD assistant mode
-./run-lc-agent.sh --assistant usd
+lc-agent --assistant usd
 
 # Use a different model
-./run-lc-agent.sh --model llama-maverick
+lc-agent --model llama-maverick
 
 # Verbose mode for debugging
-./run-lc-agent.sh --verbose --query "Hello"
+lc-agent --verbose --query "Hello"
 ```
 
 **Available models**: `gpt-120b` (default), `openai/gpt-oss-120b`, `llama-maverick`
@@ -98,6 +103,7 @@ This approach allows you to:
 - Quickly test changes to the LC Agent core framework
 - Develop and debug agent logic without Kit dependencies
 - Run unit tests and experiments in a lightweight environment
+- Keep the core `lc_agent` generic while using NVIDIA models via `lc_agent_cli`
 
 ## Documentation
 
