@@ -13,6 +13,7 @@ import asyncio
 import sys
 import time
 from pathlib import Path
+from typing import ClassVar, List
 
 # Add the lc_agent module to the path
 lc_agent_path = Path(__file__).parent / "source" / "modules" / "lc_agent" / "src"
@@ -32,7 +33,11 @@ except ImportError as e:
 class TimedDemoNode(RunnableNode):
     """A test node that tracks execution timing."""
 
-    execution_events = []
+    execution_events: ClassVar[List[str]] = []
+    node_name: str = ""
+    delay: float = 0
+    start_time: float | None = None
+    end_time: float | None = None
 
     def __init__(self, name: str, delay: float = 0):
         super().__init__()
@@ -128,6 +133,11 @@ async def test_diamond_graph():
         node_c = TimedDemoNode(name="C", delay=1.0)
         node_d = TimedDemoNode(name="D", delay=0.1)
 
+        # Set up parent relationships manually
+        node_b.parents = [node_a]
+        node_c.parents = [node_a]
+        node_d.parents = [node_b, node_c]
+
     # Execute and time
     print("Executing network...")
     start = time.time()
@@ -167,6 +177,13 @@ async def test_wide_graph():
         node_d = TimedDemoNode(name="D", delay=0.5)
         node_e = TimedDemoNode(name="E", delay=0.5)
         node_f = TimedDemoNode(name="F", delay=0.1)
+
+        # Set up parent relationships manually
+        node_b.parents = [node_a]
+        node_c.parents = [node_a]
+        node_d.parents = [node_a]
+        node_e.parents = [node_a]
+        node_f.parents = [node_b, node_c, node_d, node_e]
 
     # Execute and time
     print("Executing network...")

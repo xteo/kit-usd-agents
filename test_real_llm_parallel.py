@@ -24,13 +24,14 @@ import sys
 import time
 import os
 from pathlib import Path
+from typing import Optional
 
 # Add lc_agent to path
 lc_agent_src = Path(__file__).parent / "source" / "modules" / "lc_agent" / "src"
 sys.path.insert(0, str(lc_agent_src))
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from lc_agent.chat_models.chat_nvcf import ChatNVCF
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from lc_agent.runnable_node import RunnableNode
 from lc_agent.runnable_network import RunnableNetwork
 
@@ -39,6 +40,14 @@ class RealLLMNode(RunnableNode):
     """
     RunnableNode that makes REAL LLM API calls.
     """
+
+    node_name: str = ""
+    system_prompt: str = ""
+    user_prompt: str = ""
+    model_name: str = "meta/llama-3.1-8b-instruct"
+    start_time: Optional[float] = None
+    end_time: Optional[float] = None
+    duration: Optional[float] = None
 
     def __init__(self, name: str, system_prompt: str, user_prompt: str, model: str = "meta/llama-3.1-8b-instruct"):
         super().__init__()
@@ -51,8 +60,15 @@ class RealLLMNode(RunnableNode):
         self.duration = None
 
     def _get_chat_model(self, chat_model_input, invoke_input, config):
-        """Override to provide our ChatNVCF model."""
-        chat_model = ChatNVCF(model=self.model_name, temperature=0.1, max_tokens=100)
+        """Override to provide our NVIDIA model."""
+        api_key = os.environ.get("NVIDIA_API_KEY")
+        chat_model = ChatNVIDIA(
+            model=self.model_name,
+            api_key=api_key,
+            base_url="https://integrate.api.nvidia.com/v1",
+            temperature=0.1,
+            max_tokens=100
+        )
         return chat_model
 
     async def ainvoke(self, input=None, config=None, **kwargs):
@@ -156,6 +172,9 @@ async def test_diamond_with_real_llms():
         # Node A: Root (no LLM call, just setup)
         node_a = RunnableNode()
         node_a.name = "A-Setup"
+        # Mark as already invoked so it doesn't try to call LLM
+        node_a.invoked = True
+        node_a.outputs = SystemMessage(content="Setup complete")
 
         # Node B: First LLM call
         node_b = RealLLMNode(
