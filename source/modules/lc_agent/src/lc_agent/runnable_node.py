@@ -12,7 +12,10 @@ from .node_factory import get_node_factory
 from .utils.culling import _cull_messages
 from .utils.profiling_utils import Profiler
 from .uuid_utils import UUIDMixin
-from langchain.prompts import ChatPromptTemplate
+try:
+    from langchain.prompts import ChatPromptTemplate
+except ImportError:
+    from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks.base import BaseCallbackManager
 from langchain_core.messages import (
@@ -36,6 +39,7 @@ from langchain_core.runnables.utils import Input, Output
 from pydantic import model_serializer, model_validator
 from typing import Any, Dict, Iterator, List, Optional, AsyncIterator, ForwardRef, Type, Union
 from typing_extensions import Self
+import asyncio
 import os
 import time
 
@@ -999,6 +1003,81 @@ class RunnableNode(RunnableSerializable[Input, Output], UUIDMixin):
                 parents_result.append(result)
         return parents_result
 
+    def _group_by_dependency_level(self, nodes: List["RunnableNode"]) -> List[List["RunnableNode"]]:
+        """
+        Group nodes by dependency level so that nodes at the same level
+        can be executed in parallel.
+
+        Nodes are grouped such that all dependencies of nodes at level N
+        are in levels 0 to N-1. This ensures that nodes at the same level
+        are independent and can execute concurrently.
+
+        Args:
+            nodes: List of nodes to group by dependency level
+
+        Returns:
+            List of lists, where each inner list contains nodes at the same
+            dependency level. Level 0 contains root nodes (no parents),
+            level 1 contains nodes whose parents are all in level 0, etc.
+
+        Example:
+            For graph A -> B, A -> C, B -> D, C -> D:
+            Returns [[A], [B, C], [D]]
+            - Level 0: A (root node)
+            - Level 1: B, C (both depend only on A, can run in parallel)
+            - Level 2: D (depends on B and C)
+        """
+        node_set = set(nodes)
+        node_levels = {}
+
+        def get_level(node: "RunnableNode") -> int:
+            """
+            Recursively compute the dependency level of a node.
+
+            The level is defined as:
+            - 0 for root nodes (no parents)
+            - 1 + max(parent levels) for nodes with parents
+            """
+            if node in node_levels:
+                return node_levels[node]
+
+            # Root nodes (no parents) are at level 0
+            if not node.parents:
+                node_levels[node] = 0
+                return 0
+
+            # Filter parents to only include those in our node set
+            # This is important when processing a subset of the graph
+            relevant_parents = [p for p in node.parents if p in node_set]
+
+            if not relevant_parents:
+                # No relevant parents means this is effectively a root in this subgraph
+                node_levels[node] = 0
+                return 0
+
+            # Level is 1 + maximum level of all parents
+            # This ensures all parent dependencies are satisfied before this node
+            parent_levels = [get_level(p) for p in relevant_parents]
+            level = 1 + max(parent_levels)
+            node_levels[node] = level
+            return level
+
+        # Calculate levels for all nodes
+        for node in nodes:
+            get_level(node)
+
+        # Group nodes by level
+        if not node_levels:
+            return []
+
+        max_level = max(node_levels.values())
+        levels = [[] for _ in range(max_level + 1)]
+
+        for node, level in node_levels.items():
+            levels[level].append(node)
+
+        return levels
+
     async def _aprocess_parents(self, input: Dict[str, Any], config: Optional[RunnableConfig], **kwargs: Any) -> list:
         with Profiler(
             f"process_parents_{self.__class__.__name__}",
@@ -1007,17 +1086,37 @@ class RunnableNode(RunnableSerializable[Input, Output], UUIDMixin):
             node_name=self.name or self.__class__.__name__,
             parent_count=len(self.parents),
         ):
-            parents_result = []
+            # Collect all nodes to execute via the iteration chain
             iterated = set()
-            for p in self._iterate_chain(iterated):
-                if p is self:
-                    continue
+            nodes_to_execute = [p for p in self._iterate_chain(iterated) if p is not self]
 
-                result = await p.ainvoke(input, config, **kwargs)
-                if isinstance(result, list):
-                    parents_result.extend(result)
-                else:
-                    parents_result.append(result)
+            # If no nodes to execute, return empty list
+            if not nodes_to_execute:
+                return []
+
+            # Group nodes by dependency level for parallel execution
+            # Nodes at the same level have no dependencies on each other
+            # and can be executed concurrently
+            levels = self._group_by_dependency_level(nodes_to_execute)
+
+            parents_result = []
+
+            # Execute each level in parallel using asyncio.gather
+            for level_nodes in levels:
+                # Create async tasks for all nodes at this level
+                tasks = [node.ainvoke(input, config, **kwargs) for node in level_nodes]
+
+                # Execute all tasks concurrently and wait for all to complete
+                # asyncio.gather maintains order and will raise on first exception
+                results = await asyncio.gather(*tasks)
+
+                # Collect results in the same format as before
+                for result in results:
+                    if isinstance(result, list):
+                        parents_result.extend(result)
+                    else:
+                        parents_result.append(result)
+
             return parents_result
 
     def _reorder_tool_messages(self, messages):
