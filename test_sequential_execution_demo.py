@@ -13,6 +13,7 @@ import asyncio
 import sys
 import time
 from pathlib import Path
+from typing import ClassVar, List
 
 # Add the lc_agent module to the path
 lc_agent_path = Path(__file__).parent / "source" / "modules" / "lc_agent" / "src"
@@ -32,7 +33,11 @@ except ImportError as e:
 class TimedDemoNode(RunnableNode):
     """A test node that tracks execution timing."""
 
-    execution_events = []
+    execution_events: ClassVar[List[str]] = []
+    node_name: str = ""
+    delay: float = 0
+    start_time: float | None = None
+    end_time: float | None = None
 
     def __init__(self, name: str, delay: float = 0):
         super().__init__()
@@ -41,10 +46,12 @@ class TimedDemoNode(RunnableNode):
         self.start_time = None
         self.end_time = None
 
-    async def ainvoke(self, input=None, config=None, **kwargs):
-        if self.invoked:
-            return self.outputs
+    def _get_chat_model(self, chat_model_name, chat_model_input, input, config):
+        """Override to skip chat model retrieval."""
+        return None
 
+    async def _ainvoke_chat_model(self, chat_model, chat_model_input, input, config, **kwargs):
+        """Override to add timing and delay without calling LLM."""
         self.start_time = time.time()
         TimedDemoNode.execution_events.append(f"[{time.time():.3f}] {self.node_name} STARTED")
 
@@ -55,9 +62,7 @@ class TimedDemoNode(RunnableNode):
         self.end_time = time.time()
         TimedDemoNode.execution_events.append(f"[{time.time():.3f}] {self.node_name} FINISHED")
 
-        self.outputs = AIMessage(content=f"{self.node_name} result")
-        self.invoked = True
-        return self.outputs
+        return AIMessage(content=f"{self.node_name} result")
 
 
 def print_header(title):
@@ -128,10 +133,15 @@ async def test_diamond_graph():
         node_c = TimedDemoNode(name="C", delay=1.0)
         node_d = TimedDemoNode(name="D", delay=0.1)
 
-    # Execute and time
-    print("Executing network...")
+        # Set up parent relationships manually
+        node_b.parents = [node_a]
+        node_c.parents = [node_a]
+        node_d.parents = [node_b, node_c]
+
+    # Execute and time - invoke the leaf node directly to trigger parallel execution
+    print("Executing network (invoking leaf node D)...")
     start = time.time()
-    await network.ainvoke()
+    await node_d.ainvoke()
     total_time = time.time() - start
 
     # Print results
@@ -168,10 +178,17 @@ async def test_wide_graph():
         node_e = TimedDemoNode(name="E", delay=0.5)
         node_f = TimedDemoNode(name="F", delay=0.1)
 
-    # Execute and time
-    print("Executing network...")
+        # Set up parent relationships manually
+        node_b.parents = [node_a]
+        node_c.parents = [node_a]
+        node_d.parents = [node_a]
+        node_e.parents = [node_a]
+        node_f.parents = [node_b, node_c, node_d, node_e]
+
+    # Execute and time - invoke the leaf node directly to trigger parallel execution
+    print("Executing network (invoking leaf node F)...")
     start = time.time()
-    await network.ainvoke()
+    await node_f.ainvoke()
     total_time = time.time() - start
 
     # Print results

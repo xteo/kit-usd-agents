@@ -1,0 +1,70 @@
+
+╔════════════════════════════════════════════════════════════════════╗
+║                                                                    ║
+║                   REAL LLM Parallel Execution Test                 ║
+║                                                                    ║
+╚════════════════════════════════════════════════════════════════════╝
+
+This test makes ACTUAL API calls to NVIDIA NIM to prove
+that parallel execution works with real LLM inference.
+
+✓ NVIDIA_API_KEY found: nvapi-aQW4...8HPl
+
+WARNING: This test will make REAL API calls!
+Expected cost: ~3 API calls to meta/llama-3.1-8b-instruct
+
+======================================================================
+TEST: Diamond Graph with REAL LLM API Calls
+======================================================================
+
+Graph structure:
+         A (setup)
+        / \
+       B   C  (TWO CONCURRENT LLM CALLS)
+        \ /
+         D  (THIRD LLM CALL - summarizes)
+
+This will make THREE actual API calls to NVIDIA NIM.
+B and C should run CONCURRENTLY (same timestamp).
+D should wait for both B and C to complete.
+
+Starting execution...
+
+
+✗✗✗ ERROR DURING EXECUTION ✗✗✗
+Error: The api_key client option must be set either by passing api_key to the client or by setting the OPENAI_API_KEY environment variable
+Traceback (most recent call last):
+  File "/home/user/kit-usd-agents/test_real_llm_parallel.py", line 207, in test_diamond_with_real_llms
+    result = await network.ainvoke()
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/kit-usd-agents/source/modules/lc_agent/src/lc_agent/runnable_network.py", line 210, in ainvoke
+    return await self._ainvoke(input, config, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/kit-usd-agents/source/modules/lc_agent/src/lc_agent/runnable_network.py", line 578, in _ainvoke
+    result = await node.ainvoke(input, config, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/kit-usd-agents/source/modules/lc_agent/src/lc_agent/runnable_node.py", line 606, in ainvoke
+    chat_model = self._get_chat_model(chat_model_name, chat_model_input, input, config)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/kit-usd-agents/source/modules/lc_agent/src/lc_agent/runnable_node.py", line 776, in _get_chat_model
+    chat_model = ChatOpenAI(model="gpt-3.5-turbo")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/kit-usd-agents/venv/lib/python3.11/site-packages/langchain_core/load/serializable.py", line 116, in __init__
+    super().__init__(*args, **kwargs)
+  File "/home/user/kit-usd-agents/venv/lib/python3.11/site-packages/pydantic/main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/kit-usd-agents/venv/lib/python3.11/site-packages/langchain_openai/chat_models/base.py", line 948, in validate_environment
+    self.root_async_client = openai.AsyncOpenAI(
+                             ^^^^^^^^^^^^^^^^^^^
+  File "/home/user/kit-usd-agents/venv/lib/python3.11/site-packages/openai/_client.py", line 488, in __init__
+    raise OpenAIError(
+openai.OpenAIError: The api_key client option must be set either by passing api_key to the client or by setting the OPENAI_API_KEY environment variable
+
+======================================================================
+FINAL SUMMARY
+======================================================================
+
+✗ TEST FAILED
+LLM calls did not execute in parallel as expected.
+

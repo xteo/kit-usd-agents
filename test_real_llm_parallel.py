@@ -24,13 +24,14 @@ import sys
 import time
 import os
 from pathlib import Path
+from typing import Optional
 
 # Add lc_agent to path
 lc_agent_src = Path(__file__).parent / "source" / "modules" / "lc_agent" / "src"
 sys.path.insert(0, str(lc_agent_src))
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from lc_agent.chat_models.chat_nvcf import ChatNVCF
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from lc_agent.runnable_node import RunnableNode
 from lc_agent.runnable_network import RunnableNetwork
 
@@ -39,6 +40,14 @@ class RealLLMNode(RunnableNode):
     """
     RunnableNode that makes REAL LLM API calls.
     """
+
+    node_name: str = ""
+    system_prompt: str = ""
+    user_prompt: str = ""
+    model_name: str = "meta/llama-3.1-8b-instruct"
+    start_time: Optional[float] = None
+    end_time: Optional[float] = None
+    duration: Optional[float] = None
 
     def __init__(self, name: str, system_prompt: str, user_prompt: str, model: str = "meta/llama-3.1-8b-instruct"):
         super().__init__()
@@ -50,16 +59,20 @@ class RealLLMNode(RunnableNode):
         self.end_time = None
         self.duration = None
 
-    def _get_chat_model(self, chat_model_input, invoke_input, config):
-        """Override to provide our ChatNVCF model."""
-        chat_model = ChatNVCF(model=self.model_name, temperature=0.1, max_tokens=100)
+    def _get_chat_model(self, chat_model_name, chat_model_input, input, config):
+        """Override to provide our NVIDIA model."""
+        api_key = os.environ.get("NVIDIA_API_KEY")
+        chat_model = ChatNVIDIA(
+            model=self.model_name,
+            api_key=api_key,
+            base_url="https://integrate.api.nvidia.com/v1",
+            temperature=0.1,
+            max_completion_tokens=100  # Use max_completion_tokens instead of max_tokens
+        )
         return chat_model
 
-    async def ainvoke(self, input=None, config=None, **kwargs):
-        """Execute with timing."""
-        if self.invoked:
-            return self.outputs
-
+    async def _ainvoke_chat_model(self, chat_model, chat_model_input, input, config, **kwargs):
+        """Override to add timing and make REAL LLM call."""
         print(f"\n[{time.time():.3f}] {self.node_name} - Starting LLM call...")
         print(f"  Model: {self.model_name}")
         print(f"  Prompt: {self.user_prompt[:60]}...")
@@ -67,9 +80,6 @@ class RealLLMNode(RunnableNode):
         self.start_time = time.time()
 
         try:
-            # Get the chat model
-            chat_model = self._get_chat_model(None, input, config)
-
             # Prepare messages
             messages = [
                 SystemMessage(content=self.system_prompt),
@@ -85,9 +95,7 @@ class RealLLMNode(RunnableNode):
             print(f"[{self.end_time:.3f}] {self.node_name} - FINISHED (took {self.duration:.2f}s)")
             print(f"  Response: {result.content[:100]}...")
 
-            self.outputs = result
-            self.invoked = True
-            return self.outputs
+            return result
 
         except Exception as e:
             self.end_time = time.time()
@@ -141,9 +149,9 @@ async def test_diamond_with_real_llms():
     print()
     print("Graph structure:")
     print("         A (setup)")
-    print("        / \\")
+    print(r"        / \ ")
     print("       B   C  (TWO CONCURRENT LLM CALLS)")
-    print("        \\ /")
+    print(r"        \ / ")
     print("         D  (THIRD LLM CALL - summarizes)")
     print()
     print("This will make THREE actual API calls to NVIDIA NIM.")
@@ -156,6 +164,9 @@ async def test_diamond_with_real_llms():
         # Node A: Root (no LLM call, just setup)
         node_a = RunnableNode()
         node_a.name = "A-Setup"
+        # Mark as already invoked so it doesn't try to call LLM
+        node_a.invoked = True
+        node_a.outputs = SystemMessage(content="Setup complete")
 
         # Node B: First LLM call
         node_b = RealLLMNode(
@@ -186,9 +197,9 @@ async def test_diamond_with_real_llms():
 
     overall_start = time.time()
 
-    # Execute the network (D will trigger execution of A, B, C)
+    # Execute by invoking the leaf node directly (D will trigger parallel execution of B and C)
     try:
-        result = await network.ainvoke()
+        result = await node_d.ainvoke()
         overall_end = time.time()
         overall_duration = overall_end - overall_start
 

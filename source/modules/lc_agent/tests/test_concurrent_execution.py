@@ -18,7 +18,7 @@ improvements for multi-agent workflows.
 import pytest
 import asyncio
 import time
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, ClassVar, List
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import AIMessage
 
@@ -35,7 +35,11 @@ class TimedNode(RunnableNode):
     """
 
     # Class variable to track all execution events across all instances
-    execution_log = []
+    execution_log: ClassVar[List[Dict[str, Any]]] = []
+    node_name: str = ""
+    delay: float = 0
+    start_time: Optional[float] = None
+    end_time: Optional[float] = None
 
     def __init__(self, name: str, delay: float = 0, *args, **kwargs):
         """
