@@ -25,22 +25,34 @@ import time
 import os
 from pathlib import Path
 
-# Add lc_agent to path
-lc_agent_src = Path(__file__).parent / "source" / "modules" / "lc_agent" / "src"
+# Add lc_agent and lc_agent_cli to path
+repo_root = Path(__file__).parent
+lc_agent_src = repo_root / "source" / "modules" / "lc_agent" / "src"
+lc_agent_cli_src = repo_root / "source" / "modules" / "lc_agent_cli" / "src"
 sys.path.insert(0, str(lc_agent_src))
+sys.path.insert(0, str(lc_agent_cli_src))
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from lc_agent.chat_models.chat_nvcf import ChatNVCF
 from lc_agent.runnable_node import RunnableNode
 from lc_agent.runnable_network import RunnableNetwork
+
+# Import and register NVIDIA models
+try:
+    from lc_agent_cli import register_all
+    print("✓ Importing lc_agent_cli for NVIDIA model registration...")
+    register_all()
+    print("✓ NVIDIA models registered successfully")
+except ImportError as e:
+    print(f"⚠ Warning: Could not import lc_agent_cli: {e}")
+    print("  Falling back to direct ChatNVCF import")
 
 
 class RealLLMNode(RunnableNode):
     """
-    RunnableNode that makes REAL LLM API calls.
+    RunnableNode that makes REAL LLM API calls using CLI-registered models.
     """
 
-    def __init__(self, name: str, system_prompt: str, user_prompt: str, model: str = "meta/llama-3.1-8b-instruct"):
+    def __init__(self, name: str, system_prompt: str, user_prompt: str, model: str = "gpt-120b"):
         super().__init__()
         self.node_name = name
         self.system_prompt = system_prompt
@@ -51,7 +63,27 @@ class RealLLMNode(RunnableNode):
         self.duration = None
 
     def _get_chat_model(self, chat_model_input, invoke_input, config):
-        """Override to provide our ChatNVCF model."""
+        """Override to use registered model from CLI."""
+        # Get model from registry (registered by CLI)
+        try:
+            from lc_agent import get_chat_model_registry
+            registry = get_chat_model_registry()
+            chat_model = registry.get_model(self.model_name)
+            if chat_model:
+                return chat_model
+        except Exception as e:
+            print(f"  Warning: Could not get model from registry: {e}")
+
+        # Fallback to direct ChatNVIDIA if available
+        try:
+            from langchain_nvidia_ai_endpoints import ChatNVIDIA
+            chat_model = ChatNVIDIA(model=self.model_name, temperature=0.1, max_tokens=100)
+            return chat_model
+        except ImportError:
+            pass
+
+        # Last resort fallback to ChatNVCF
+        from lc_agent.chat_models.chat_nvcf import ChatNVCF
         chat_model = ChatNVCF(model=self.model_name, temperature=0.1, max_tokens=100)
         return chat_model
 
@@ -109,7 +141,7 @@ def check_api_key():
         print("Steps to get an API key:")
         print("1. Go to https://build.nvidia.com/")
         print("2. Sign in with your NVIDIA account")
-        print("3. Navigate to any model (e.g., meta/llama-3.1-8b-instruct)")
+        print("3. Navigate to any model (e.g., openai/gpt-oss-120b)")
         print("4. Click 'Get API Key'")
         print("5. Copy the key")
         print()
@@ -284,7 +316,7 @@ async def main():
 
     print()
     print("WARNING: This test will make REAL API calls!")
-    print("Expected cost: ~3 API calls to meta/llama-3.1-8b-instruct")
+    print("Expected cost: ~3 API calls to gpt-120b (openai/gpt-oss-120b)")
     print()
 
     try:

@@ -54,7 +54,7 @@ class CLIRealLLMNode(RunnableNode):
     RunnableNode that makes REAL LLM API calls using CLI-registered models.
     """
 
-    def __init__(self, name: str, system_prompt: str, user_prompt: str, model: str = "meta/llama-3.1-8b-instruct"):
+    def __init__(self, name: str, system_prompt: str, user_prompt: str, model: str = "gpt-120b"):
         super().__init__()
         self.node_name = name
         self.system_prompt = system_prompt
@@ -65,19 +65,26 @@ class CLIRealLLMNode(RunnableNode):
         self.duration = None
 
     def _get_chat_model(self, chat_model_input, invoke_input, config):
-        """Override to provide our ChatNVCF model."""
-        # Try to get model from factory (if registered by CLI)
+        """Override to use registered model from CLI."""
+        # Get model from registry (registered by CLI)
         try:
-            from lc_agent.node_factory import get_node_factory
-            factory = get_node_factory()
+            from lc_agent import get_chat_model_registry
+            registry = get_chat_model_registry()
+            chat_model = registry.get_model(self.model_name)
+            if chat_model:
+                return chat_model
+        except Exception as e:
+            print(f"  Warning: Could not get model from registry: {e}")
 
-            # Check if model is registered
-            if self.model_name in factory._registry:
-                return factory.create(self.model_name)
-        except Exception:
+        # Fallback to direct ChatNVIDIA if available
+        try:
+            from langchain_nvidia_ai_endpoints import ChatNVIDIA
+            chat_model = ChatNVIDIA(model=self.model_name, temperature=0.1, max_tokens=100)
+            return chat_model
+        except ImportError:
             pass
 
-        # Fallback to direct ChatNVCF
+        # Last resort fallback to ChatNVCF
         from lc_agent.chat_models.chat_nvcf import ChatNVCF
         chat_model = ChatNVCF(model=self.model_name, temperature=0.1, max_tokens=100)
         return chat_model
@@ -174,6 +181,7 @@ async def test_cli_diamond_with_real_llms():
     print("         D  (THIRD LLM CALL - summarizes)")
     print()
     print("This will make THREE actual API calls to NVIDIA NIM.")
+    print("Using model: gpt-120b (openai/gpt-oss-120b)")
     print("B and C should run CONCURRENTLY (same timestamp).")
     print("D should wait for both B and C to complete.")
     print()
@@ -318,7 +326,7 @@ async def main():
 
     print()
     print("WARNING: This test will make REAL API calls!")
-    print("Expected cost: ~3 API calls to meta/llama-3.1-8b-instruct")
+    print("Expected cost: ~3 API calls to gpt-120b (openai/gpt-oss-120b)")
     print()
 
     try:

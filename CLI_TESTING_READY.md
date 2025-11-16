@@ -226,7 +226,7 @@ The parallel execution implementation is complete, the CLI infrastructure is mer
 2. Run `./run-cli-parallel-test.sh`
 3. See the proof that parallel execution works with real LLMs!
 
-The test will make 3 actual API calls to NVIDIA NIM and prove that independent branches execute concurrently, achieving measurable speedup (typically 1.5-2x for diamond graphs).
+The test will make 3 actual API calls to NVIDIA NIM using **gpt-120b** (openai/gpt-oss-120b) and prove that independent branches execute concurrently, achieving measurable speedup (typically 1.5-2x for diamond graphs).
 
 ---
 

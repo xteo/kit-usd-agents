@@ -80,7 +80,7 @@ Speedup vs sequential: 1.91x
 
 1. Go to [https://build.nvidia.com/](https://build.nvidia.com/)
 2. Sign in with your NVIDIA account (free)
-3. Navigate to any model (e.g., `meta/llama-3.1-8b-instruct`)
+3. Navigate to any model (e.g., `openai/gpt-oss-120b`)
 4. Click **"Get API Key"**
 5. Copy the API key
 
@@ -142,7 +142,8 @@ python3 test_cli_parallel_execution.py
 ```
 
 **What it does:**
-- Registers NVIDIA models via `lc_agent_cli`
+- Registers NVIDIA models via `lc_agent_cli` (gpt-120b, llama-maverick)
+- Uses **gpt-120b** (openai/gpt-oss-120b) as default model
 - Creates diamond graph with real LLM nodes
 - Node B: "What is artificial intelligence?" (concurrent)
 - Node C: "What is machine learning?" (concurrent)
