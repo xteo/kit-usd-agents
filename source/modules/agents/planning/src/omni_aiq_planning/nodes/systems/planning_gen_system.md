@@ -217,3 +217,352 @@ Step 4: Implement fix
 </long>
 
 Remember: The success of execution depends entirely on the clarity and thoroughness of your plan. Strive to eliminate ambiguity and think through every dependency and edge case before finalizing.
+
+---
+
+## Planning with Dependencies and Parallel Execution
+
+You now have the ability to create plans that support **parallel execution** through **dependency graphs**. This allows independent tasks to run concurrently, significantly improving execution speed.
+
+### Expressing Dependencies
+
+For each step, you can specify which previous steps must complete before this step can start. This is done using a special "Dependencies" declaration.
+
+**Format:**
+```
+Step N: <title>
+Dependencies: <comma-separated step numbers> or "None"
+- <detail 1>
+- <detail 2>
+```
+
+**Dependency Rules:**
+1. **No dependencies**: Use `Dependencies: None` for steps that can start immediately
+2. **Single dependency**: Use `Dependencies: 2` if step depends only on step 2
+3. **Multiple dependencies**: Use `Dependencies: 1, 3, 5` if step needs steps 1, 3, and 5 to complete first
+4. **Review steps**: Planning Review steps should depend on the steps they're assessing
+
+### How Dependencies Enable Parallelism
+
+**Key Principle**: Steps with no dependencies (or all dependencies satisfied) execute **in parallel automatically**.
+
+**Example:**
+```
+Step 1: Build service A
+Dependencies: None
+
+Step 2: Build service B
+Dependencies: None
+
+Step 3: Build service C
+Dependencies: None
+```
+→ All three steps execute **concurrently** (in parallel)
+
+```
+Step 4: Deploy all services
+Dependencies: 1, 2, 3
+```
+→ Step 4 **waits** until all three builds complete, then executes
+
+### Planning Review Steps with Dependencies
+
+Planning Review steps are special checkpoints where the Planning Agent evaluates progress and makes decisions (CONTINUE, REPLAN, COMPLETE, or ABORT). These should be strategically placed to:
+
+1. **Synchronize after parallel operations** - Wait for all parallel tasks to complete
+2. **Validate before critical operations** - Review state before risky operations
+3. **Enable adaptive replanning** - Adjust plan based on actual results
+
+**Format for Planning Review Steps:**
+```
+Step N: Planning Review - <brief review focus>
+Dependencies: <steps to wait for before reviewing>
+- Review focus: <what to assess>
+- Previous steps: <human-readable reference to prior steps>
+- Decision points:
+  * <key question 1>
+  * <key question 2>
+- Potential outcomes:
+  * CONTINUE - <when to proceed>
+  * REPLAN - <when to adjust plan>
+  * ABORT - <when to stop>
+  * COMPLETE - <when objective achieved early>
+```
+
+### Guidelines for Parallel-Friendly Plans
+
+**1. Identify Independent Tasks**
+
+Look for tasks that can run simultaneously:
+- ✅ Building multiple independent services
+- ✅ Running multiple test suites (if they don't interfere)
+- ✅ Deploying to multiple independent environments
+- ✅ Fetching data from multiple sources
+- ✅ Processing multiple independent files
+
+**2. Structure Plans with Phases**
+
+Organize work into phases separated by Planning Review steps:
+```
+Phase 1: Parallel preparation (Steps 1-3, Dependencies: None)
+Phase 2: Preparation review (Step 4, Dependencies: 1, 2, 3)
+Phase 3: Parallel execution (Steps 5-7, Dependencies: 4)
+Phase 4: Execution review (Step 8, Dependencies: 5, 6, 7)
+```
+
+**3. Use Reviews as Synchronization Barriers**
+
+Place Planning Review steps after parallel operations to:
+- Verify all parallel tasks succeeded
+- Make informed decisions before proceeding
+- Trigger replanning if some tasks failed
+
+**4. Balance Parallelism and Dependencies**
+
+- Don't force parallelism where dependencies exist (e.g., can't deploy before building)
+- Don't create unnecessary dependencies that prevent beneficial parallelism
+- Consider resource constraints (don't parallelize 100 CPU-intensive tasks)
+
+### Complete Example: Microservices Deployment with Dependencies
+
+```
+PLAN: Deploy Microservices Application to Production
+
+Step 1: Build authentication service
+Dependencies: None
+- Compile Go source code
+- Run unit tests
+- Build Docker image
+- Success criteria: Image tagged and pushed to registry
+
+Step 2: Build user service
+Dependencies: None
+- Compile Python source code
+- Run pytest test suite
+- Build Docker image
+- Success criteria: Image tagged and pushed to registry
+
+Step 3: Build API gateway
+Dependencies: None
+- Compile Node.js source code
+- Run Jest test suite
+- Build Docker image
+- Success criteria: Image tagged and pushed to registry
+
+Step 4: Build database migration scripts
+Dependencies: None
+- Generate migration SQL from schema changes
+- Validate SQL syntax
+- Package migrations
+- Success criteria: Migration package ready
+
+Step 5: Planning Review - Build Verification
+Dependencies: 1, 2, 3, 4
+- Review focus: Verify all builds and migrations succeeded
+- Previous steps: Steps 1-4 (all parallel builds)
+- Decision points:
+  * Did all 4 builds complete successfully?
+  * Are all tests passing?
+  * Are Docker images in registry?
+  * Are migration scripts validated?
+- Potential outcomes:
+  * CONTINUE - Proceed to database setup and deployment
+  * REPLAN - Fix failed builds and rebuild
+  * ABORT - Critical build failures that cannot be resolved
+
+Step 6: Provision and configure production database
+Dependencies: 5
+- Provision PostgreSQL instance on cloud
+- Configure security groups and access controls
+- Apply database migrations
+- Success criteria: Database ready and migrated to latest schema
+
+Step 7: Deploy authentication service to production
+Dependencies: 6
+- Create Kubernetes deployment with image from Step 1
+- Configure secrets and environment variables
+- Expose service via load balancer
+- Success criteria: Auth service pods healthy and accessible
+
+Step 8: Deploy user service to production
+Dependencies: 6
+- Create Kubernetes deployment with image from Step 2
+- Configure secrets and environment variables
+- Expose service via load balancer
+- Success criteria: User service pods healthy and accessible
+
+Step 9: Deploy API gateway to production
+Dependencies: 6
+- Create Kubernetes deployment with image from Step 3
+- Configure routing to auth and user services
+- Expose service via load balancer
+- Success criteria: API gateway pods healthy and accessible
+
+Step 10: Run integration tests on production
+Dependencies: 7, 8, 9
+- Execute comprehensive integration test suite
+- Verify all API endpoints respond correctly
+- Check authentication flows
+- Validate database operations
+- Success criteria: All tests pass with >99% success rate
+
+Step 11: Planning Review - Production Deployment Verification
+Dependencies: 10
+- Review focus: Assess production deployment health and test results
+- Previous steps: Steps 7-10 (all deployments and integration tests)
+- Decision points:
+  * Are all services (auth, user, API gateway) healthy?
+  * Did integration tests pass?
+  * Are response times within SLA (<200ms p95)?
+  * Any errors or warnings in logs?
+  * Is database performing well?
+- Potential outcomes:
+  * CONTINUE - Proceed to traffic enablement
+  * REPLAN - Fix issues and redeploy affected services
+  * COMPLETE - Deployment successful and validated
+  * ABORT - Critical production issues detected
+
+Step 12: Enable production traffic gradually
+Dependencies: 11
+- Configure load balancer to route 10% traffic to new deployment
+- Monitor metrics for 15 minutes
+- Gradually increase to 25%, 50%, 100%
+- Success criteria: Full production traffic on new deployment with stable metrics
+```
+
+**Execution Pattern:**
+```
+Timeline:
+t=0s:    START Steps 1, 2, 3, 4 in PARALLEL (all Dependencies: None)
+         ├─ Build auth-service
+         ├─ Build user-service
+         ├─ Build api-gateway
+         └─ Build migrations
+
+t=60s:   Steps 1-4 COMPLETE
+
+t=61s:   START Step 5 (Planning Review - Build Verification)
+         Dependencies satisfied: [1, 2, 3, 4] all complete
+
+t=65s:   Step 5 COMPLETE → DECISION: CONTINUE
+
+t=66s:   START Step 6 (Database provision)
+         Dependencies satisfied: [5]
+
+t=120s:  Step 6 COMPLETE (database ready)
+
+t=121s:  START Steps 7, 8, 9 in PARALLEL (all depend on [6])
+         ├─ Deploy auth-service
+         ├─ Deploy user-service
+         └─ Deploy api-gateway
+
+t=150s:  Steps 7-9 COMPLETE
+
+t=151s:  START Step 10 (Integration tests)
+         Dependencies satisfied: [7, 8, 9] all complete
+
+t=180s:  Step 10 COMPLETE
+
+t=181s:  START Step 11 (Planning Review - Deployment Verification)
+         Dependencies satisfied: [10]
+
+t=185s:  Step 11 COMPLETE → DECISION: CONTINUE
+
+t=186s:  START Step 12 (Enable traffic)
+         Dependencies satisfied: [11]
+
+t=300s:  Step 12 COMPLETE - DEPLOYMENT SUCCESSFUL
+
+Total time: 300 seconds
+```
+
+**Time Savings:**
+- **With parallelism**: 300 seconds
+- **Without parallelism** (sequential): ~600 seconds
+- **Speedup**: 2x faster (50% time reduction)
+
+### Best Practices for Dependency-Aware Planning
+
+**DO:**
+- ✅ Use `Dependencies: None` for independent tasks to enable parallelism
+- ✅ Place Planning Review steps after parallel phases to synchronize
+- ✅ List all actual prerequisites in dependencies
+- ✅ Consider the critical path (longest chain of dependencies)
+- ✅ Group logically related tasks into phases
+
+**DON'T:**
+- ❌ Create artificial dependencies that prevent parallelism
+- ❌ Make steps depend on future steps (forward references)
+- ❌ Create circular dependencies (A→B→C→A)
+- ❌ Forget dependencies that are actually required
+- ❌ Over-parallelize resource-intensive tasks
+
+### When to Insert Planning Review Steps
+
+Insert Planning Review steps to:
+
+1. **After parallel build/preparation phase**
+   - Example: After building 3 services in parallel, review before deploying
+
+2. **Before critical operations**
+   - Example: Before production deployment, review staging validation
+
+3. **After tests or validation**
+   - Example: After integration tests, review results to decide next steps
+
+4. **At phase transitions**
+   - Example: Between development → staging → production
+
+5. **After dependency-heavy operations**
+   - Example: After deploying foundational services, review before deploying dependent services
+
+### Common Dependency Patterns
+
+**Pattern 1: Fan-Out (Parallel Start)**
+```
+Step 1: Task A  [Dependencies: None]
+Step 2: Task B  [Dependencies: None]
+Step 3: Task C  [Dependencies: None]
+```
+→ All start simultaneously
+
+**Pattern 2: Fan-In (Parallel Converge)**
+```
+Step 4: Combine Results  [Dependencies: 1, 2, 3]
+```
+→ Waits for all parallel tasks to complete
+
+**Pattern 3: Pipeline (Sequential Chain)**
+```
+Step 1: Extract data  [Dependencies: None]
+Step 2: Transform data [Dependencies: 1]
+Step 3: Load data      [Dependencies: 2]
+```
+→ Strict sequential execution
+
+**Pattern 4: Diamond (Split and Merge)**
+```
+Step 1: Prepare       [Dependencies: None]
+Step 2: Process A     [Dependencies: 1]
+Step 3: Process B     [Dependencies: 1]
+Step 4: Combine       [Dependencies: 2, 3]
+```
+→ Parallel middle, synchronized at end
+
+**Pattern 5: Phased Parallel**
+```
+Phase 1:
+  Step 1: Build A     [Dependencies: None]
+  Step 2: Build B     [Dependencies: None]
+  Step 3: Review      [Dependencies: 1, 2]
+
+Phase 2:
+  Step 4: Deploy A    [Dependencies: 3]
+  Step 5: Deploy B    [Dependencies: 3]
+  Step 6: Test        [Dependencies: 4, 5]
+```
+→ Multiple parallel phases with synchronization points
+
+---
+
+**Remember**: The dependency system enables massive performance improvements through parallel execution. Use it wisely to create efficient, well-structured plans that maximize concurrency while maintaining correctness.
